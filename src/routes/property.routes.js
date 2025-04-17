@@ -13,7 +13,7 @@ const router = express.Router();
 router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
 
 
-router.route("/").get(createProperty);
+router.route("/registerProperty").post(createProperty);
 router.route("/nearby").get(getNearbyProperties);
 router.route("/:id").get(getPropertyById).put(updateProperty).delete(deleteProperty);
 

@@ -2,15 +2,16 @@ import { Property } from "../models/property.model.js";
 import {ApiResponse} from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import redisClient from "../config/redis.js";
+import mongoose from "mongoose";
 
 // 📌 Create a New Property
 const createProperty = async (req, res, next) => {
     try {
-        const { name, address, location, listingType, price, sellerId } = req.body;
+        const { name, address, pincode,  location, listingType, price} = req.body;
 
         // ✅ Validate Required Fields
-        if (![name, address, location, listingType, price, sellerId].every(Boolean)) {
-            throw new ApiError(400, "All fields (name, address, location, listingType, price, sellerId) are required.");
+        if (![name, address, pincode, city, state, location, listingType, price].every(Boolean)) {
+            throw new ApiError(400, "All fields (name, address, location, pincode, city, state, listingType, price, sellerId) are required.");
         }
 
         // ✅ Validate Listing Type
@@ -27,9 +28,25 @@ const createProperty = async (req, res, next) => {
         if (!location || typeof location !== "object" || !location.lat || !location.lng) {
             throw new ApiError(400, "Location must be an object with 'lat' and 'lng' values.");
         }
+        // ✅ Convert Location to GeoJSON Format for MongoDB
+        const geoLocation = {
+            type: "Point",
+            coordinates: [location.lat,location.lng] // [longitude, latitude]
+        };
 
-        // ✅ Create Property
-        const newProperty = new Property(req.body);
+        // ✅ Create & Save Property
+        const newProperty = new Property({
+            name,
+            address,
+            pincode,
+            city,
+            state,
+            location: geoLocation,
+            listingType,
+            price,
+            sellerId: req.user?._id,
+        });
+
         await newProperty.save();
 
         // 🔄 Clear Cache after Adding a New Property
@@ -61,7 +78,7 @@ const getNearbyProperties = async (req, res, next) => {
         const properties = await Property.find({
             location: {
                 $near: {
-                    $geometry: { type: "Point", coordinates: [parseFloat(lon), parseFloat(lat)] },
+                    $geometry: { type: "Point", coordinates: [parseFloat(lat), parseFloat(lon)] },
                     $maxDistance: parseFloat(radius),
                 },
             },
@@ -80,6 +97,11 @@ const getNearbyProperties = async (req, res, next) => {
 const getPropertyById = async (req, res, next) => {
     try {
         const { id } = req.params;
+
+
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            throw new ApiError(404,"invalid propert id")
+        }
 
         const cacheKey = `property:${id}`;
         const cachedData = await redisClient.get(cacheKey);
@@ -100,7 +122,6 @@ const getPropertyById = async (req, res, next) => {
         next(error);
     }
 };
-
 
 // 📌 Update Property & Clear Cache
 const updateProperty = async (req, res, next) => {
