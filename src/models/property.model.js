@@ -38,8 +38,10 @@ const propertySchema = new mongoose.Schema({
             required: true
         }
     },
-
-    listingType: { type: String, required: true },
+    listingType:{ 
+        type: String, 
+        required: true 
+    },
     price: { 
         type: Number, 
         required: true 
