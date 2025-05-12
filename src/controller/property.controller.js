@@ -1,7 +1,7 @@
 import { Property } from "../models/property.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-import redisClient from "../config/redis.js";
+// import redisClient from "../config/redis.js";
 import mongoose from "mongoose";
 
 // 📌 Create a New Property
@@ -69,7 +69,7 @@ const createProperty = async (req, res, next) => {
 
         const savedProperties = await Property.insertMany(preparedProperties);
 
-        await redisClient.flushDb(); // Clear cache
+        //await redisClient.flushDb(); // Clear cache
 
         return res
             .status(201)
@@ -89,19 +89,19 @@ const getNearbyProperties = async (req, res, next) => {
             throw new ApiError(400, "Latitude & Longitude are required.");
         }
 
-        const cacheKey = `nearby:${lat}:${lon}:${radius}`;
-        const cachedData = await redisClient.get(cacheKey);
+        // const cacheKey = `nearby:${lat}:${lon}:${radius}`;
+        // const cachedData = await redisClient.get(cacheKey);
 
-        if (cachedData) {
-            console.log("✅ Cache Hit");
-            return res.json(
-                new ApiResponse(
-                    200,
-                    JSON.parse(cachedData),
-                    "Nearby properties fetched from cache."
-                )
-            );
-        }
+        // if (cachedData) {
+        //     console.log("✅ Cache Hit");
+        //     return res.json(
+        //         new ApiResponse(
+        //             200,
+        //             JSON.parse(cachedData),
+        //             "Nearby properties fetched from cache."
+        //         )
+        //     );
+        // }
 
         console.log("⏳ Fetching from Database...");
         const result = await Property.aggregate([
@@ -127,7 +127,7 @@ const getNearbyProperties = async (req, res, next) => {
         ]);
 
         // ✅ Store Data in Redis Cache (Expire in 10 minutes)
-        await redisClient.setEx(cacheKey, 600, JSON.stringify(result));
+        //await redisClient.setEx(cacheKey, 600, JSON.stringify(result));
 
         return res.json(
             new ApiResponse(200, result, "Nearby properties fetched successfully.")
@@ -146,25 +146,25 @@ const getPropertyById = async (req, res, next) => {
             throw new ApiError(404, "invalid propert id");
         }
 
-        const cacheKey = `property:${id}`;
-        const cachedData = await redisClient.get(cacheKey);
+        // const cacheKey = `property:${id}`;
+        // const cachedData = await redisClient.get(cacheKey);
 
-        if (cachedData) {
-            console.log("✅ Cache Hit");
-            return res.json(
-                new ApiResponse(
-                    200,
-                    JSON.parse(cachedData),
-                    "Property fetched from cache."
-                )
-            );
-        }
+        // if (cachedData) {
+        //     console.log("✅ Cache Hit");
+        //     return res.json(
+        //         new ApiResponse(
+        //             200,
+        //             JSON.parse(cachedData),
+        //             "Property fetched from cache."
+        //         )
+        //     );
+        // }
 
         const property = await Property.findById(id);
         if (!property) throw new ApiError(404, "Property not found.");
 
         // ✅ Cache the property data (Expire in 30 minutes)
-        await redisClient.setEx(cacheKey, 1800, JSON.stringify(property));
+        // await redisClient.setEx(cacheKey, 1800, JSON.stringify(property));
 
         return res.json(
             new ApiResponse(200, property, "Property fetched successfully.")
@@ -207,10 +207,10 @@ const deleteProperty = async (req, res, next) => {
         if (!deletedProperty) throw new ApiError(404, "Property not found.");
 
         // 🔄 Clear Cache after Delete
-        await Promise.all([
-            redisClient.del(`property:${id}`),
-            redisClient.flushDb(),
-        ]);
+        // await Promise.all([
+        //     redisClient.del(`property:${id}`),
+        //     redisClient.flushDb(),
+        // ]);
 
         return res.json(
             new ApiResponse(200, null, "Property deleted successfully.")

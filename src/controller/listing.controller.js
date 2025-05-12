@@ -1,5 +1,5 @@
 import {Listing} from "../models/listing.model.js";
-import redisClient from "../config/redis.js";
+// import redisClient from "../config/redis.js";
 import {ApiError} from "../utils/ApiError.js";
 import {ApiResponse} from "../utils/ApiResponse.js";
 
